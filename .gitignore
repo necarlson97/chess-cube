@@ -2,6 +2,9 @@
 speech/*.mp3
 save.yaml
 
+# Stockfish engine is different depending on the platform
+stockfish_10*
+
 #### Below is python project defaults
 # Byte-compiled / optimized / DLL files
 __pycache__/

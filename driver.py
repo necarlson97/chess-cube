@@ -1,6 +1,7 @@
 #!/usr/bin/python3.7
 import random as rand
 import string
+import os
 
 from stockfish import Stockfish  # Stockfish chess engine for the chess ai
 import chess  # python-chess chess board manedgement
@@ -37,9 +38,8 @@ class LivingBoard():
     difficulty = SAVE_DATA.get('difficulty', .3)
 
     def __init__(self, get_move_func=None):
-        # Initilize stockfish AI chess player
-        SF_PATH = './stockfish_10_x64'
-        self.stockfish = Stockfish(SF_PATH)
+        # Initilize stockfish chess AI for computer moves
+        self.stockfish = self.get_stockfish()
 
         # Initlize python-chess playing board
         self.board = chess.Board()
@@ -54,6 +54,22 @@ class LivingBoard():
         self.get_human_move = get_move_func
         if self.get_human_move is None:
             self.get_human_move = self.get_move
+
+    def get_stockfish(self):
+        prefixed = [filename for filename in os.listdir('.')
+                    if filename.startswith('stockfish_10')]
+
+        if len(prefixed) == 0:
+            raise ValueError('Stockfish engine file not found. Download '
+                             '"stockfish_10_x64", or whichever archatecture '
+                             'version suits the platform.')
+        if len(prefixed) > 1:
+            raise ValueError(f'Found multiple possible stockfish files: '
+                             f'{prefixed}. Change prefix on (or remove) '
+                             f'unwated files.')
+
+        stock_file = f'./{prefixed[0]}'
+        return Stockfish(stock_file)
 
     def get_move(self):
         # Flip a coin based on difficulty level, either returning a random move
