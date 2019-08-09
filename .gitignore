@@ -1,6 +1,6 @@
 # Generated files need not be saved
-speech/*.mp3
-save.yaml
+assets/save.yaml
+assets/stockfish_*
 
 # Stockfish engine is different depending on the platform
 stockfish_10*

@@ -11,7 +11,7 @@ from speaker import Speaker
 
 
 # TODO CLEANUP
-SAVE_FILE_NAME = 'save.yaml'
+SAVE_FILE_NAME = 'assets/save.yaml'
 
 
 def read_save_file():
@@ -37,7 +37,7 @@ class LivingBoard():
     # TODO use a nested for save data that has its own save/load
     difficulty = SAVE_DATA.get('difficulty', .3)
 
-    def __init__(self, get_move_func=None):
+    def __init__(self, get_move_func=None, quiet=False):
         # Initilize stockfish chess AI for computer moves
         self.stockfish = self.get_stockfish()
 
@@ -45,18 +45,18 @@ class LivingBoard():
         self.board = chess.Board()
 
         # Holdss logic for speaking moves, greetings, etc
-        self.speaker = Speaker()
+        self.speaker = Speaker(self, quiet=quiet)
 
         # Say howdy
         self.speaker.say_greeting()
 
         # TODO DOC
-        self.get_human_move = get_move_func
-        if self.get_human_move is None:
-            self.get_human_move = self.get_move
+        self.get_human_move_uci = get_move_func
+        if self.get_human_move_uci is None:
+            self.get_human_move_uci = self.get_ai_move_uci
 
     def get_stockfish(self):
-        prefixed = [filename for filename in os.listdir('.')
+        prefixed = [filename for filename in os.listdir('assets')
                     if filename.startswith('stockfish_10')]
 
         if len(prefixed) == 0:
@@ -68,10 +68,15 @@ class LivingBoard():
                              f'{prefixed}. Change prefix on (or remove) '
                              f'unwated files.')
 
-        stock_file = f'./{prefixed[0]}'
+        stock_file = f'assets/{prefixed[0]}'
         return Stockfish(stock_file)
 
-    def get_move(self):
+    def uci_to_move(self, uci):
+        # TODO ERROR CHECKING
+        # TODO REMOVE TESTING
+        return chess.Move.from_uci(uci)
+
+    def get_ai_move_uci(self):
         # Flip a coin based on difficulty level, either returning a random move
         # or stockfishes best move
         self.speaker.say_thinking()
@@ -80,32 +85,43 @@ class LivingBoard():
         moves = [m.uci() for m in self.board.legal_moves]
         return rand.choice(moves)
 
+    def get_human_move(self):
+        return self.uci_to_move(self.get_human_move_uci())
+
+    def get_ai_move(self):
+        return self.uci_to_move(self.get_ai_move_uci())
+
     def play_move(self):
         """
         If a uci move is given, play that move, otherwise, generate your own
         move using get_move.
         A move is added to the board, turn advancing and all that.
         """
-        if not self.is_human_turn():
-            move = self.get_move()
-            self.speaker.say_move(move)
-        else:
+
+        if self.is_human_turn():
             move = self.get_human_move()
-            self.speaker.say_response(move)
+            self.speaker.say_human_move(move)
+        else:
+            move = self.get_ai_move()
+            self.speaker.say_ai_move(move)
 
         if move is None:
             raise ValueError('It is the human turn, please enter a move')
 
         # Apply move to board and to stockfish
-        self.board.push_uci(move)
-        self.stockfish.set_fen_position(self.board.fen())
+        try:
+            self.board.push(move)
+            self.stockfish.set_fen_position(self.board.fen())
+        except ValueError:
+            # TODO add speech func
+            self.speaker.say("OOPS")
 
     def is_over(self):
         # Returns true if there is a checkmate, draw, or other game over
         return self.board.is_game_over()
 
     def is_human_turn(self):
-        return not self.board.turn
+        return self.board.turn
 
     def play_game(self):
         """
@@ -171,40 +187,66 @@ class LivingBoard():
             yaml.dump(data, outfile, default_flow_style=False)
 
 
+# TODO put this in seperate input file
+def to_uci(i):
+    """
+    Take text input which could be UCI or digits, and
+    return only UCI. Return None if it is not valid
+    """
+    if len(i) != 4:
+        return None
+
+    is_uci = ((i[1] + i[3]).isdigit() and
+              (i[0] + i[2]).isalpha())
+    if is_uci:
+        return i
+
+    # Because chess UCI looks like 'a1e4', we turn half the digits
+    # to the corisponding letter to turn 4 digits to UCI
+    def n_to_uci(nums, i):
+        n = nums[i]
+        if i % 2 != 0:
+            return str(n)
+        return string.ascii_lowercase[n - 1]
+
+    if i.isdigit():
+        # 0000 is 'pass my turn'
+        if i == '0000':
+            return i
+
+        # Assuming we only have digit character at this point,
+        # turn each digit to an int
+        nums = [int(c) for c in i]
+        uci = [n_to_uci(nums, i) for i in range(4)]
+        uci = ''.join(uci)
+        print('uci', uci)
+        return uci
+
+    return None
+
+
+def text_input():
+    # Function that we are using (for now) to get the human move
+
+    # Taking in digits from the (for now) keypad
+    while True:
+        inp = input('Enter move: ')
+        print('Raw', inp)
+
+        inp = to_uci(inp)
+
+        if inp is None:
+            print(f'"{inp}" should be UCI (eg, "a2b3")'
+                  f' or 4 digits (eg "1223")')
+
+            # Todo gross
+            Speaker().say(f'INVALID: {inp}')
+            continue
+
+        return inp
+
+
 if __name__ == '__main__':
-    def text_input():
-        # Function that we are using (for now) to get the human move
-
-        # Taking in digits from the (for now) keypad
-        while True:
-            inp = input('Enter move: ')
-            print('Raw', inp)
-
-            if len(inp) != 4 or not inp.isdigit():
-                print(f'"{inp}" should be 4 digits')
-                continue
-
-            # 0000 is 'pass my turn'
-            if inp == '0000':
-                return inp
-
-            # Assuming we only have digit character at this point,
-            # turn each digit to an int
-            nums = [int(c) for c in inp]
-
-            # Because chess UCI looks like 'a1e4', we turn half the digits
-            # to the corisponding letter
-            def n_to_uci(nums, i):
-                n = nums[i]
-                if i % 2 != 0:
-                    return str(n)
-                return string.ascii_lowercase[n]
-
-            uci = [n_to_uci(nums, i) for i in range(4)]
-            uci = ''.join(uci)
-            print('uci', uci)
-            return uci
-
     # TODO add human input to init
     lb = LivingBoard(text_input)
     lb.play_game()
