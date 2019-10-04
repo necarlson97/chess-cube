@@ -49,7 +49,7 @@ class LivingBoard():
         6: 'king'
     }
 
-    def __init__(self, get_move_func=None, quiet=False):
+    def __init__(self, get_move_func=None, quiet=False, speaker=None):
         # Initilize stockfish chess AI for computer moves
         self.stockfish = self.get_stockfish()
 
@@ -57,8 +57,12 @@ class LivingBoard():
         self.board = chess.Board()
         self.commit_fen()
 
-        # Holdss logic for speaking moves, greetings, etc
-        self.speaker = Speaker(self, quiet=quiet)
+        # Holds logic for speaking moves, greetings, etc
+        if speaker is None:
+            self.speaker = Speaker(self, quiet=quiet)
+        else:
+            self.speaker = speaker
+        self.speaker.living_board = self
 
         # Say howdy
         self.speaker.say_greeting()
@@ -105,6 +109,7 @@ class LivingBoard():
         # Flip a coin based on difficulty level, either returning a random move
         # or stockfishes best move
         self.speaker.say_thinking()
+        # TODO have it sample from the ordered list of best moves
         if rand.random() < self.save_data['difficulty']:
             return self.stockfish.get_best_move()
         moves = [m.uci() for m in self.board.legal_moves]
@@ -121,7 +126,6 @@ class LivingBoard():
                 # Otherwise, move was illegal, read uci back to user
                 uci = move.uci()
                 self.speaker.say(f'ILLEGAL: {uci[:2]} to {uci[2:]}')
-                print([str(m) for m in self.board.legal_moves])  # TODO remove?
             except ValueError as e:
                 # IF pthon-chess threw error, saw error
                 # TODO more clear speech
@@ -155,9 +159,6 @@ class LivingBoard():
             self.speaker.say('Checkmate')
         if self.board.is_stalemate():
             self.speaker.say('Stalemate')
-
-        # TODO REMOVE
-        print(self.board)
 
     def commit_move(self, move):
         """
@@ -203,6 +204,7 @@ class LivingBoard():
         the human player input in UCI format.
         TODO add special returns from input, such as resetting game, etc
         """
+        self.speaker.say('GAME START')
         while not self.is_over():
             self.play_move()
 

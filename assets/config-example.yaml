@@ -1,0 +1,11 @@
+# Secret config for email things
+# Create a new yaml named 'config.yaml' and swap out with real info
+email_config:
+  smtp_ssl_host: mail.google.com
+  smtp_ssl_port: 465
+  imap_ssl_host: mail.google.com
+  imap_ssl_port: 143
+  username: bob@example.com
+  password: crazy-taxi-45
+  sender: bob@example.com
+  targets: [alice@example.com]

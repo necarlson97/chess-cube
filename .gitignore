@@ -2,6 +2,9 @@
 assets/save.yaml
 assets/stockfish_*
 
+# Secret (non-git) email config info
+assets/config.yaml
+
 # Stockfish engine is different depending on the platform
 stockfish_10*
 

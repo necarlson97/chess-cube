@@ -39,16 +39,19 @@ class TextInput():
         """
         Start the game over
         """
+        self.speaker.say(f'Resetting game...')
         self.living_board.reset()
+        self.speaker.say(self.living_board.board, voiced=False)
 
     def load_current(self, raw):
         """
         Load the most recent move (if, for example, the last game was quit,
         error'd out, etc). If ended on white's turn, loads to white's turn.
+        Also useful to print out current board
         """
         self.living_board.load_fen(previous=0)
         self.speaker.say(f'Loading saved board...')
-        print(self.living_board.board)
+        self.speaker.say(self.living_board.board, voiced=False)
 
     def load_past(self, raw):
         """
@@ -58,7 +61,7 @@ class TextInput():
         """
         self.living_board.load_fen(previous=2)
         self.speaker.say(f'Loading previous board...')
-        print(self.living_board.board)
+        self.speaker.say(self.living_board.board, voiced=False)
 
     def load_fen(self, raw):
         """
@@ -68,7 +71,11 @@ class TextInput():
         fen = raw[2:]
         self.living_board.load_fen(fen)
         self.speaker.say(f'Setting special board...')
-        print(self.living_board.board)
+        self.speaker.say(self.living_board.board, voiced=False)
+
+    def show_board(self, raw):
+        self.speaker.say(f'Showing board...')
+        self.speaker.say(self.living_board.board, voiced=False)
 
     def run_code(self, raw):
         """
@@ -82,6 +89,7 @@ class TextInput():
             '2': self.reset_game,
             '3': self.load_past,
             '4': self.load_current,
+            '5': self.show_board,
             '9': self.load_fen
         }
 
@@ -140,9 +148,12 @@ class TextInput():
 
         inp = self.to_uci(raw)
         if inp is None:
-            print(f'"{inp}" should be UCI (eg, "a2b3") '
-                  f'or 4 digits (eg "1223"). '
-                  f'For promotion, uci of h7h8q becomes 87886')
+            inp_help = (
+                f'"{inp}" should be UCI (eg, "a2b3") '
+                f'or 4 digits (eg "1223"). '
+                f'For promotion, uci of h7h8q becomes 87886'
+            )
+            self.speaker.say(inp_help, voiced=False)
 
             # TODO more useful speech
             spaced_raw = ' '.join(r for r in raw)
@@ -151,13 +162,21 @@ class TextInput():
 
         return inp
 
-    def get_input_func(self):
+    def get_input_func(self, custom_raw_func=None):
         # Return to get the human move
+        # Allows the ability to add another layer by
+        # providing a raw input function, which will
+        # then be parsed by this class and passed along
+        # (allows us to use the same parsing funcs for
+        # terminal input and email input)
 
         # Taking in digits from the (for now) keypad
         def text_input():
             while True:
-                raw = input('Enter move: ')
+                if custom_raw_func is not None:
+                    raw = custom_raw_func()
+                else:
+                    raw = input('Enter move: ')
                 print('Raw', raw)
 
                 res = self.try_input(raw)
