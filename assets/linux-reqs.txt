@@ -1,0 +1,4 @@
+# For now, just install by hand (with apt-get)
+python3.7
+virtualenv
+espeak

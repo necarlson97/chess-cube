@@ -2,9 +2,6 @@ from gtts import gTTS  # Google text to speech for the computer player speech
 import pyttsx3  # Another text to speech engine that offers more voices
 import subprocess  # Python os for playing google speech mp3s
 
-# TODO REMOVE
-from text_input import TextInput
-
 
 class Speaker():
     """
@@ -24,6 +21,8 @@ class Speaker():
 
     def __init__(self, living_board=None, quiet=False):
         self.living_board = living_board
+        if living_board is not None:
+            living_board.speaker = self
 
         self.pytts.setProperty('rate', self.rate)
         self.pytts.setProperty('volume', self.volume)
@@ -34,7 +33,7 @@ class Speaker():
         self.voiced = not quiet
 
     def say_greeting(self):
-        self.say('GAME START')
+        pass
 
     def say_thinking(self):
         pass
@@ -55,6 +54,9 @@ class Speaker():
         unique move = Pawn to a3
         uci = a2 to a3
         """
+        if self.living_board is None:
+            raise ValueError('Cannot translate, as '
+                'speaker has no associated board')
         board = self.living_board.board
 
         from_piece = board.piece_at(move.from_square)
@@ -201,7 +203,7 @@ class Speaker():
         # more plain english
         self.say(self.move_to_english_str(move))
 
-    def say(self, s, wait=False, slow=False, end=None):
+    def say(self, s, wait=False, slow=False, end=None, voiced=True):
         """
         Take in a string s and communicate that phrase to the user. Can be
         through printed text, voice, displaying on screen, anything.
@@ -209,7 +211,9 @@ class Speaker():
         """
         print(s, end=end)
 
-        if self.voiced:
+        # If we were told to voice this string, and voicing has not been
+        # disabled globally for this instance
+        if voiced and self.voiced:
             self.voice_func(s, wait, slow)
 
     def pytts_say(self, s, wait=False, slow=False):
@@ -242,3 +246,11 @@ class Speaker():
 
     def say_draw(self):
         self.say('GAME OVER. DRAW.')
+
+    def commit(self):
+        """
+        Stub function, not used for current vocal, but for some speakers
+        (like email) it is useful to store up all the things that need
+        to be siad in a turn, then sned them all as a single message
+        """
+        pass
