@@ -103,6 +103,7 @@ class TextInput():
         Take text input which could be UCI or digits, and
         return only UCI. Return None if it is not valid
         """
+        i = i.lower()
         if len(i) not in {4, 5}:
             return None
 
@@ -140,7 +141,12 @@ class TextInput():
         return None
 
     def try_input(self, raw):
-        # TODO DOC
+        """
+        Given a raw input, we return 'False' if the input does not correspond
+        to a valid chess move (uci format or otherwise). This could either mean
+        the input was a special chess-cube code (which is promptly performed),
+        or that the input was errored (in which case the speaker says so).
+        """
 
         if raw.startswith('*'):
             self.run_code(raw)
@@ -162,21 +168,16 @@ class TextInput():
 
         return inp
 
-    def get_input_func(self, custom_raw_func=None):
-        # Return to get the human move
-        # Allows the ability to add another layer by
-        # providing a raw input function, which will
-        # then be parsed by this class and passed along
-        # (allows us to use the same parsing funcs for
-        # terminal input and email input)
+    def get_input_func(self):
+        """
+        Returns a function that can be called to get the human move.
+        (this method is overridden in subclasses)
+        """
 
         # Taking in digits from the (for now) keypad
         def text_input():
             while True:
-                if custom_raw_func is not None:
-                    raw = custom_raw_func()
-                else:
-                    raw = input('Enter move: ')
+                raw = input('Enter move: ')
                 print('Raw', raw)
 
                 res = self.try_input(raw)

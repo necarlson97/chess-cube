@@ -71,9 +71,59 @@ class EmailSpeaker(Speaker):
             self.send_email(s)
 
 
+class EmailInput(TextInput):
+    """
+    Because we want to add long pauses between email moves,
+    we modify the email input (that way, we only pause)
+    on 'actual' inputs, not codes of failed inputs
+    """
+
+    def __init__(self, email_chess):
+        self.email_chess = email_chess
+        self.living_board = email_chess.living_board
+        self.speaker = self.living_board.speaker
+
+    def pause_to_think(self):
+        """
+        When playing a game, we want the game to stretch out slowley
+        over the course of the day, and not be particularly. To do this,
+        we simply have the thread pause for an hour (or whatever time
+        delta) after recieving a move.
+
+        '*' codes (show board, reset game, etc) happen immediatly
+        """
+        if self.email_chess.THINK_TIME_DELTA is None:
+            return
+        print(f'Pausing to "think" for {self.email_chess.THINK_TIME_DELTA}')
+        secs = self.email_chess.THINK_TIME_DELTA.total_seconds()
+        time.sleep(secs)
+
+    def get_input_func(self):
+        """
+        Returns a function which can be called to get the user input from
+        email AND handles the long pausing (a desired trait of the email AI)
+        """
+
+        # Taking in digits from the (for now) keypad
+        def text_input():
+            while True:
+                raw = self.email_chess.get_email_input()
+                print(f'Email input raw: "{raw}"')
+
+                res = self.try_input(raw)
+                if res is not False:
+                    print(f'Valid input "{res}", pausing to think...')
+                    self.pause_to_think()
+                    return res
+
+        return text_input
+
+
 class EmailChess():
-    # Play chess over email! Email your responses just the same
-    # as you would into the terminal
+    """
+    Play chess over email! Email your responses just the same
+    as you would into the terminal - thats the idea at least
+    """
 
     # TODO could have it represent a timedelta,
     # rather than just true
@@ -88,13 +138,11 @@ class EmailChess():
         self._subject = f'Chess {self.last_check_date}'
 
         self.speaker = EmailSpeaker(self)
-        lb = LivingBoard(speaker=self.speaker)
-        # Hot swap normal speaker with email based one
-        ti = TextInput(lb)
-        lb.get_human_move_uci = ti.get_input_func(self.get_email_input)
+        self.living_board = LivingBoard(speaker=self.speaker)
+        # Use a special text input as the retriever for human moves
+        ti = EmailInput(self)
+        self.living_board.get_human_move_uci = ti.get_input_func()
 
-        self.living_board = lb
-    
     def play_game(self):
         self.living_board.play_game()
 
@@ -144,7 +192,7 @@ class EmailChess():
             message_date = date_parse(m.get('Date'))
             if message_date > self.last_check_date:
                 # Update our most recent check as being now, so we don't use
-                # these same messages again 
+                # these same messages again
                 self.last_check_date = dt.now(timezone.utc)
                 self._subject = f"Re: {m['Subject']}"
                 messages.append(m)
@@ -188,19 +236,13 @@ class EmailChess():
 
             # If we have a non-trivial message
             if message.replace('\n', ''):
-
-                # TODO I think I like it that '*' codes happen immediatly,
-                # but actual moves take time.
-                if not message.startswith('*'):
-                    self.pause_to_think()
-
                 return message
 
             time.sleep(10)
 
-            # If no update has occured in a long time, reset the game 
+            # If no update has occurred in a long time, reset the game
             should_reset = (
-                EmailChess.RESET_TIME_DELTA is not None 
+                EmailChess.RESET_TIME_DELTA is not None
                 and (check_time - self.last_check_date)
                 >= EmailChess.RESET_TIME_DELTA
             )
@@ -210,22 +252,7 @@ class EmailChess():
                     f'No email input for {EmailChess.RESET_TIME_DELTA}, '
                     f'resetting game.'
                 )
-                return '*2'  # The specal code for a game reset
-
-    def pause_to_think(self):
-        """
-        When playing a game, we want the game to stretch out slowley
-        over the course of the day, and not be particularly. To do this,
-        we simply have the thread pause for an hour (or whatever time
-        delta) after recieving a move.
-
-        '*' codes (show board, reset game, etc) happen immediatly
-        """
-        if EmailChess.THINK_TIME_DELTA is None:
-            return
-        print(f'Pausing to "think" for {EmailChess.THINK_TIME_DELTA}')
-        secs = EmailChess.THINK_TIME_DELTA.total_seconds()
-        time.sleep(secs)
+                return '*2'  # The special code for a game reset
 
 
 if __name__ == '__main__':
