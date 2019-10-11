@@ -148,6 +148,14 @@ class EmailChess():
 
     def get_email_messages(self):
         # TODO DOC
+        try:
+            return self._get_email_messages()
+        except Exception as e:
+            print(f'"get_email_messages" exception caught: {e}')
+            return []
+
+    def _get_email_messages(self):
+        # TODO DOC
 
         # Send any unsent responces
         self.speaker.commit()
@@ -242,9 +250,9 @@ class EmailChess():
 
             # If no update has occurred in a long time, reset the game
             should_reset = (
-                EmailChess.RESET_TIME_DELTA is not None
-                and (check_time - self.last_check_date)
-                >= EmailChess.RESET_TIME_DELTA
+                EmailChess.RESET_TIME_DELTA is not None and
+                (check_time - self.last_check_date) >=
+                EmailChess.RESET_TIME_DELTA
             )
             # TODO could have it kill the process, but for now, reset is fine
             if should_reset:
