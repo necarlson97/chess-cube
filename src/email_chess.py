@@ -36,6 +36,10 @@ class EmailSpeaker(Speaker):
     # normally speak the result to the player, and instead have it
     # sent as an email
 
+    # For now, we are voicing always as false until I get espeak
+    # working on the rpi
+    voiced = False
+
     def __init__(self, email_chess, living_board=None, quiet=False):
         super().__init__(living_board, quiet)
         self.email_chess = email_chess
