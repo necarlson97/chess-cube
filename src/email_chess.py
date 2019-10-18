@@ -115,7 +115,7 @@ class EmailInput(TextInput):
                 print(f'Email input raw: "{raw}"')
 
                 res = self.try_input(raw)
-                if res is not False:
+                if res is not None:
                     print(f'Valid input "{res}", pausing to think...')
                     self.pause_to_think()
                     return res
