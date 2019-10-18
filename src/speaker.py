@@ -39,10 +39,16 @@ class Speaker():
         pass
 
     def say_ai_move(self, move):
+        # TODO what do we do for null move?
+        if not move:
+            return
         self.say('RESPONSE: ', end='')
         self.say_move(move)
 
     def say_human_move(self, move):
+        # TODO what do we do for null move?
+        if not move:
+            return
         self.say(f'   INPUT: ', end='')
         self.say_move(move)
 
@@ -54,8 +60,13 @@ class Speaker():
         unique move = Pawn to a3
         uci = a2 to a3
         """
+        # If null move is given:
+        if not move:
+            return 'null move'
+
         if self.living_board is None:
-            raise ValueError('Cannot translate, as '
+            raise ValueError(
+                'Cannot translate, as '
                 'speaker has no associated board')
         board = self.living_board.board
 
@@ -197,10 +208,12 @@ class Speaker():
         return s
 
     def say_move(self, move):
-        # Turn the chess UCI format to something that sounds better
-        # (Google says the move better if we space it out)
-        # TODO might not want to use uci here, migjt want to use
-        # more plain english
+        """
+        Turn the chess UCI format to something that sounds better
+        (Google says the move better if we space it out)
+        TODO might not want to use uci here, migjt want to use
+        more plain english
+        """
         self.say(self.move_to_english_str(move))
 
     def say(self, s, wait=False, slow=False, end=None, voiced=True):

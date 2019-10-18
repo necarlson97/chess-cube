@@ -7,6 +7,10 @@ First argument changs the 'enviornment'. Options:
   email - Run with input and output over email
 """
 
+# TODO add an automatic option for post-ssh, what we are doing now as:
+# nohup bash go.sh email &
+# Could do it with python or nohup
+
 # Enter python virtual enviornment
 source env/bin/activate
 

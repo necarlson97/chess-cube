@@ -1,17 +1,17 @@
 import time
 from datetime import timezone, timedelta, datetime as dt
 from dateutil.parser import parse as date_parse
-import re
 
 import smtplib
 import poplib
-from email.parser import Parser, FeedParser, BytesParser
+from email.parser import Parser
 from email.mime.text import MIMEText
 import yaml
 
 from living_board import LivingBoard
 from speaker import Speaker
 from text_input import TextInput
+from match_names import generate_match_name
 
 
 def read_config_file():
@@ -35,6 +35,10 @@ class EmailSpeaker(Speaker):
     # A class that allows us to override the method that would
     # normally speak the result to the player, and instead have it
     # sent as an email
+
+    # For now, we are voicing always as false until I get espeak
+    # working on the rpi
+    voiced = False
 
     def __init__(self, email_chess, living_board=None, quiet=False):
         super().__init__(living_board, quiet)
@@ -125,8 +129,8 @@ class EmailChess():
     as you would into the terminal - thats the idea at least
     """
 
-    # TODO could have it represent a timedelta,
-    # rather than just true
+    # TODO would be nice to have this as a var that can be passed
+    # for easier testing
     RESET_TIME_DELTA = None
     THINK_TIME_DELTA = timedelta(minutes=30)
 
@@ -134,8 +138,10 @@ class EmailChess():
 
         # Used to tell what emails are concidered 'recent'
         self.last_check_date = dt.now(timezone.utc)
-        # TODO add date or something
-        self._subject = f'Chess {self.last_check_date}'
+        # In the past, we used the date:
+        # f'Chess {self.last_check_date}'
+        # But for now, we will use a silly name
+        self._subject = generate_match_name()
 
         self.speaker = EmailSpeaker(self)
         self.living_board = LivingBoard(speaker=self.speaker)
@@ -145,6 +151,9 @@ class EmailChess():
 
     def play_game(self):
         self.living_board.play_game()
+        # When the game is over, we need to email final results
+        # because emails are normally sent when listening for replies
+        self.speaker.commit()
 
     def get_email_messages(self):
         # TODO DOC
@@ -226,11 +235,11 @@ class EmailChess():
                 bodies.append(m.get_payload())
 
         # Because google delivers multiparts with html as one part,
-        # we ignore the html for now. Additionally, we keep only alphanum
-        # and '*' (for special codes). (Need to remove newlines)
-        # Only get the first line to avoid getting replies
+        # we ignore the html for now. Additionally, we want to keep alphanum
+        # AND special characters (like when setting fen code) but we want
+        # to remove weird newlines (\r\n). For now we just get the first line
         bodies = [
-            re.sub(r'[^\w\d*]+', '', b.split('\n')[0])
+            b.replace('\r', '').split('\n')[0]
             for b in bodies if not b.startswith('<')
         ]
         return '\n'.join(bodies)
@@ -264,5 +273,8 @@ class EmailChess():
 
 
 if __name__ == '__main__':
-    ec = EmailChess()
-    ec.play_game()
+    # TODO is this the best way to have repeating games
+    # after the first is finished?
+    while True:
+        ec = EmailChess()
+        ec.play_game()
