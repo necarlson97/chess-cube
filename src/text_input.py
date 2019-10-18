@@ -65,7 +65,7 @@ class TextInput():
 
     def load_fen(self, raw):
         """
-        Given a text fen, set the board (more useful for texting, not possible
+        Given a text fen, set the board (more useful for text-in, not possible
         with just numpad)
         """
         fen = raw[2:]
@@ -77,12 +77,27 @@ class TextInput():
         self.speaker.say(f'Showing board...')
         self.speaker.say(self.living_board.board, voiced=False)
 
+    def resign(self, raw):
+        self.living_board.resign(is_ai=False)
+        # Give the null move UCI to advance the game (to the end)
+        return '0000'
+
+    def accept_draw(self, raw):
+        self.living_board.accept_draw()
+        # Give the null move UCI to advance the game (to the end)
+        return '0000'
+
     def run_code(self, raw):
         """
         Given the raw input started with the special 'this is a code'
         character, activate the special behavior requested
+
+        Returns a UCI to pass back to the actual game (if any)
         """
-        code = raw[1:]
+        # TODO need to think about code flow. How do we let the engine know
+        # the difference between an 'outside game' code like draw board
+        # versus an 'inside game' code like 'resign'
+        code = raw[1]
 
         codes = {
             '1': self.read_board,
@@ -90,13 +105,15 @@ class TextInput():
             '3': self.load_past,
             '4': self.load_current,
             '5': self.show_board,
+            '7': self.resign,
+            '8': self.accept_draw,
             '9': self.load_fen
         }
 
         if code not in codes:
             self.speaker.say(f'Invalid code: {raw}')
         else:
-            codes[code](raw)
+            return codes[code](raw)
 
     def to_uci(self, i):
         """
@@ -149,8 +166,7 @@ class TextInput():
         """
 
         if raw.startswith('*'):
-            self.run_code(raw)
-            return False
+            return self.run_code(raw)
 
         inp = self.to_uci(raw)
         if inp is None:
@@ -181,7 +197,7 @@ class TextInput():
                 print('Raw', raw)
 
                 res = self.try_input(raw)
-                if res is not False:
+                if res is not None:
                     return res
 
         return text_input

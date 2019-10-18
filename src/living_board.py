@@ -1,8 +1,8 @@
 import random as rand
 import os
 
-from stockfish import Stockfish  # Stockfish chess engine for the chess ai
-import chess  # python-chess chess board manedgement
+import chess  # python-chess chess board management
+from chess.engine import Limit, SimpleEngine, Cp
 import yaml  # To read the 'save file' of difficulty progress
 
 from speaker import Speaker
@@ -29,6 +29,7 @@ SAVE_DATA = read_save_file()
 
 
 class LivingBoard():
+    # TODO time to split into multiple files...
 
     # TODO add to save file the last fen or whatever nad then have an input
     # that will reload last save (if mistaken input, or restart killed game)
@@ -89,7 +90,7 @@ class LivingBoard():
                              f'unwated files.')
 
         stock_file = f'assets/{prefixed[0]}'
-        return Stockfish(stock_file)
+        return SimpleEngine.popen_uci(stock_file)
 
     def load_fen(self, fen=None, previous=0):
         """
@@ -105,22 +106,132 @@ class LivingBoard():
         # TODO REMOVE TESTING
         return chess.Move.from_uci(uci)
 
+    def accept_draw(self):
+        """
+        Player can trigger this function to accept a draw if the ai
+        offered it the previous turn
+        """
+        # For now, the AI never offers draws, so they cannot be accepted
+        if True:
+            self.speaker.say('NO DRAW OFFERED')
+        else:
+            # This signifies that the game is over and ends in a draw
+            # TODO do something better
+            self.board.clear()
+
+    def resign(self, is_ai=True):
+        if is_ai:
+            self.speaker.say('RESIGNING')
+            last_piece = 'K'
+        else:
+            self.speaker.say('YOU RESIGNED')
+            last_piece = 'k'
+        # We need to set a move that ends the game and assigns a win to
+        # whomever, so for now, we just have a single king for the winner
+        self.board.set_fen(f'8/8/8/8/8/8/8/{last_piece}7 w - -')
+
+    def get_move_score(self, move, move_time=1):
+        """
+        Helper method to return the engine's score
+        """
+        b = self.board.copy()
+        b.push(move)
+        info = self.stockfish.analyse(
+            b, Limit(time=move_time)
+        )
+        return info['score'].relative
+
+    def get_sorted_moves(self):
+        """
+        Return a list of all the moves, as rated by their score to the
+        ai player
+        """
+        # Helper method, return stockfish's score for each of the moves it
+        # could make
+        # (We allow the ai to think for a second, so the time spent on each
+        # possible moves depends on the # of possible moves)
+        total_time = 1
+        move_time = total_time / len(list(self.board.legal_moves))
+
+        # Get the score for each move, add to list as tuple for easy sorting
+        # (We use enumeration just as a tiebreaker, could use a specific
+        # tiebreaker class instance, but this works for now)
+        moves_with_score = sorted([
+            (self.get_move_score(m, move_time), i, m)
+            for i, m in enumerate(self.board.legal_moves)
+        ], reverse=True)
+        moves = [move for score, idx, move in moves_with_score]
+        return moves
+
+    def ponder_resignation(self, move_list):
+        """
+        Have ai decide if it wishes to resign or offer a draw
+        """
+        # The engine seems to have the ability to do this,
+        # the code looks something like:
+        # res = self.stockfish.play(
+        #     self.board.copy(), Limit(time=0.1)
+        # )
+        # if res.draw_offered:
+        #     self.speaker.say("OFFERING DRAW")
+        # if res.resigned:
+        #     self.resign()
+        #     return
+        # However, I was not seeing it in practice,
+        # so for now, I will use this:
+
+        # TODO could also think of custom logic for offering a draw
+        best_move = move_list[0]
+        move_score = self.get_move_score(best_move)
+        # If the best move is still worse than a pretty awful move
+        # TODO need to fine tune. Even with very few moves it still wont
+        # resign. Weirdly, when it just has a king roaming around it
+        # still thinks it is has advantage on mate. Try flipping?
+        if move_score < Cp(-20):
+            self.resign()
+            return True
+
+    def choose_from_moves(self, move_list):
+        """
+        Given the sorted list of possible moves, choose one 'organically'
+        (by randomly sampling according to the difficulty)
+        """
+        # TODO ideally we would choose with some sort of linear or bell curve
+        # determined from the difficulty, but for now:
+        # randomly choose from the x% of moves, where %x is 1 - difficulty
+        # (e.g., 1 difficulty chooses best move, .5 difficulty,
+        # chooses randomly from the top half of moves, etc)
+        diff = self.save_data['difficulty']
+        limit = len(move_list) * (1 - diff)
+        limit = int(limit)
+        limit = max(limit, 1)
+        return rand.choice(move_list[:limit])
+
     def get_ai_move_uci(self):
-        # Flip a coin based on difficulty level, either returning a random move
-        # or stockfishes best move
+        """
+        For each possible move, have the stockfish test it,
+        and assign a score. Once we have this ordered list of moves,
+        randomly sample from it according to the difficulty
+        (1 = will choose best move, 0 = totally random).
+        Return the UCI of that move.
+        (Can also resign)
+        """
         self.speaker.say_thinking()
-        # TODO have it sample from the ordered list of best moves
-        if rand.random() < self.save_data['difficulty']:
-            return self.stockfish.get_best_move()
-        moves = [m.uci() for m in self.board.legal_moves]
-        return rand.choice(moves)
+
+        choices = self.get_sorted_moves()
+
+        # If the ai chooses to resign, simply return the null move
+        if self.ponder_resignation(choices):
+            return '0000'
+
+        return self.choose_from_moves(choices).uci()
 
     def get_human_move(self):
         while True:
             try:
                 move = self.uci_to_move(self.get_human_move_uci())
-                # If move is good, we are done, return it
-                if move in self.board.legal_moves:
+                # If move is good (or is a null move), we are done, return it
+                if move in self.board.legal_moves or not move:
                     return move
 
                 # Otherwise, move was illegal, read uci back to user
@@ -175,8 +286,6 @@ class LivingBoard():
             fen = self.board.fen()
 
         self.board.set_fen(fen)
-        self.stockfish.set_fen_position(fen)
-
         if save:
             # Add this fen to the list of previous board states
             self.save_data.setdefault('fens', []).insert(0, fen)
@@ -205,6 +314,8 @@ class LivingBoard():
         TODO add special returns from input, such as resetting game, etc
         """
         self.speaker.say('GAME START')
+        # If case we call 'play_game' again, for now, just reset board
+        self.reset()
         while not self.is_over():
             self.play_move()
 
@@ -218,6 +329,7 @@ class LivingBoard():
 
         # Check result, call corrisponding func
         res_dict[self.board.result()]()
+        self.stockfish.quit()
 
     def win_game(self):
         """
