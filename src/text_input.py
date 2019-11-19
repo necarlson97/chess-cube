@@ -75,6 +75,7 @@ class TextInput():
 
     def show_board(self, raw):
         self.speaker.say(f'Showing board...')
+        self.speaker.say(self.living_board.board.fen(), voiced=False)
         self.speaker.say(self.living_board.board, voiced=False)
 
     def resign(self, raw):

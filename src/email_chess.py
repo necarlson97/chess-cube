@@ -141,7 +141,10 @@ class EmailChess():
         # In the past, we used the date:
         # f'Chess {self.last_check_date}'
         # But for now, we will use a silly name
-        self._subject = generate_match_name()
+        self.match_name = generate_match_name()
+        # USe this match name as the starting subject of our email
+        # (will become RE: subject then RE: RE: subject, etc)
+        self._subject = self.match_name
 
         self.speaker = EmailSpeaker(self)
         self.living_board = LivingBoard(speaker=self.speaker)
@@ -166,7 +169,7 @@ class EmailChess():
     def _get_email_messages(self):
         # TODO DOC
 
-        # Send any unsent responces
+        # Send any unsent responses
         self.speaker.commit()
 
         pop_conn = poplib.POP3_SSL('mail.gandi.net')
@@ -205,14 +208,20 @@ class EmailChess():
             if not any(t in m.get('From') for t in CONFIG.targets):
                 continue
 
+            # Filter so it only responds to its own match
+            if self.match_name not in m['Subject']:
+                continue
+
             # Check to see if we should have seen this message before
             message_date = date_parse(m.get('Date'))
-            if message_date > self.last_check_date:
-                # Update our most recent check as being now, so we don't use
-                # these same messages again
-                self.last_check_date = dt.now(timezone.utc)
-                self._subject = f"Re: {m['Subject']}"
-                messages.append(m)
+            if message_date < self.last_check_date:
+                continue
+
+            # Update our most recent check as being now, so we don't use
+            # these same messages again
+            self.last_check_date = dt.now(timezone.utc)
+            self._subject = f"Re: {m['Subject']}"
+            messages.append(m)
 
         return messages
 
