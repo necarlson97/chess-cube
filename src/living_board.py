@@ -50,6 +50,8 @@ class LivingBoard():
         6: 'king'
     }
 
+    seconds_per_move = 10
+
     def __init__(self, get_move_func=None, quiet=False, speaker=None):
         # Initilize stockfish chess AI for computer moves
         self.stockfish = self.get_stockfish()
@@ -148,10 +150,9 @@ class LivingBoard():
         """
         # Helper method, return stockfish's score for each of the moves it
         # could make
-        # (We allow the ai to think for a second, so the time spent on each
+        # (We allow the ai to think for ten seconds, so the time spent on each
         # possible moves depends on the # of possible moves)
-        total_time = 1
-        move_time = total_time / len(list(self.board.legal_moves))
+        move_time = self.seconds_per_move / len(list(self.board.legal_moves))
 
         # Get the score for each move, add to list as tuple for easy sorting
         # (We use enumeration just as a tiebreaker, could use a specific
@@ -159,7 +160,7 @@ class LivingBoard():
         moves_with_score = sorted([
             (self.get_move_score(m, move_time), i, m)
             for i, m in enumerate(self.board.legal_moves)
-        ], reverse=True)
+        ], reverse=False)
         moves = [move for score, idx, move in moves_with_score]
         return moves
 
@@ -187,7 +188,8 @@ class LivingBoard():
         # TODO need to fine tune. Even with very few moves it still wont
         # resign. Weirdly, when it just has a king roaming around it
         # still thinks it is has advantage on mate. Try flipping?
-        if move_score < Cp(-20):
+        print('move score', move_score)
+        if move_score > Cp(2000):
             self.resign()
             return True
 
@@ -320,6 +322,7 @@ class LivingBoard():
             self.play_move()
 
         # Depending on the outcome, we have different ending functs to call
+        # TODO need to re-doc and rename, they seem backwards currently
         res_dict = {
             '0-1': self.win_game,
             '1-0': self.loose_game,
@@ -333,20 +336,7 @@ class LivingBoard():
 
     def win_game(self):
         """
-        WHen the computer wins the game, we want to:
-        1. increase difficulty
-        2. save increase in difficulty
-        3. announce it
-        """
-        # Increase difficulty, keeping below 1
-        self.save_data['difficulty'] += 0.02
-        self.save_data['difficulty'] = min(1, self.save_data['difficulty'])
-        self.save()
-        self.speaker.say_win()
-
-    def loose_game(self):
-        """
-        WHen the computer looses the game, we want to:
+        When the computer wins the game, we want to:
         1. decrease difficulty
         2. save decrease in difficulty
         3. announce it
@@ -354,6 +344,19 @@ class LivingBoard():
         # decrease difficulty, keeping above 0
         self.save_data['difficulty'] -= 0.02
         self.save_data['difficulty'] = max(0, self.save_data['difficulty'])
+        self.save()
+        self.speaker.say_win()
+
+    def loose_game(self):
+        """
+        When the computer looses the game, we want to:
+        1. increase difficulty
+        2. save increase in difficulty
+        3. announce it
+        """
+        # increase difficulty, keeping below 1
+        self.save_data['difficulty'] += 0.02
+        self.save_data['difficulty'] = min(1, self.save_data['difficulty'])
         self.save()
         self.speaker.say_loose()
 

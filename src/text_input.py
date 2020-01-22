@@ -160,10 +160,12 @@ class TextInput():
 
     def try_input(self, raw):
         """
-        Given a raw input, we return 'False' if the input does not correspond
-        to a valid chess move (uci format or otherwise). This could either mean
-        the input was a special chess-cube code (which is promptly performed),
+        Given a raw input, we return uci to give to the board - if any.
+        if the input does not correspond to a normal chess move, it could
+        either be a special chess-cube code (which is promptly performed),
         or that the input was errored (in which case the speaker says so).
+        In some cases, the chess-cube codes also return uci,
+        which is is returned.
         """
 
         if raw.startswith('*'):
@@ -181,7 +183,7 @@ class TextInput():
             # TODO more useful speech
             spaced_raw = ' '.join(r for r in raw)
             self.speaker.say(f'INVALID: {spaced_raw}')
-            return False
+            return None
 
         return inp
 
