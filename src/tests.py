@@ -1,5 +1,6 @@
 import pyttsx3
 import chess
+import random
 
 from living_board import LivingBoard
 from text_input import TextInput
@@ -93,13 +94,15 @@ def test_english_moves():
 
 
 def test_reset_codes():
-    # TODO DOC
+    """
+    There are several special codes that start with * and can reset the board,
+    forfeit games, etc. To test this, we create lists of moves to play,
+    including codes, then check the board matches our expected state after
+    playing the moves
 
-    lb = LivingBoard(quiet=True)
-
-    moves = []
-
-    ti = TextInput(lb)
+    TODO should rewrite the moves pulling from list, the way it is written
+    is pretty gross
+    """
 
     # take an english square (like 'a3') and turn it to a number
     def sq_to_int(sq):
@@ -107,16 +110,22 @@ def test_reset_codes():
         rank = int(sq[1]) - 1
         return chess.square(file, rank)
 
+    moves = []
+
     # Swap out actual human input for our 'test human' input
     def test_move():
-        print('State of moves', moves)
         for i in range(2):
             raw = moves.pop(0)
             res = ti.try_input(raw)
-            if res is not False:
+            if res is not None:
                 return res
+        raise ValueError(f'Should have played something (given {raw}, '
+                         f'returned {res})')
 
-    lb.get_human_move_uci = test_move
+    lb = LivingBoard(get_move_func=test_move, quiet=True)
+    # For this test, we don't care how smart the AI is, so just make it fast
+    lb.seconds_per_move = 0.1
+    ti = TextInput(lb)
 
     # Play a number of moves
     def play_moves(count):
@@ -127,7 +136,9 @@ def test_reset_codes():
     def assert_is_pawn(squares):
         for sq in squares:
             i = sq_to_int(sq)
-            pt = lb.board.piece_at(i).piece_type
+            piece = lb.board.piece_at(i)
+            assert piece is not None, f'Square {sq} {i} should be a pawn (was None)'
+            pt = piece.piece_type
             assert pt == 1, f'Square {sq} {i} should be a pawn {pt}'
 
     def assert_is_empty(squares):
@@ -175,7 +186,7 @@ def test_reset_codes():
         'h2h3',
     ])
     play_moves(4)
-    # Same as above, but c was actually mived
+    # Same as above, but c was actually moved
     assert_is_pawn(['a3', 'b3', 'c3', 'd3', 'h3'])
     assert_is_empty(['a2', 'b2', 'c2', 'd2', 'h2'])
 
@@ -184,6 +195,33 @@ def test_reset_codes():
     print('Done! test_reset_codes passed')
 
 
+def test_skill_order():
+    """
+    Facing two AIs against eachother should be equally matched.
+    If we lower or increase the difficulty for one or the other, they
+    should win.
+    """
+    pass
+
+
+def test_has_brain():
+    """
+    Any AI should be better than randomly selecting moves
+    (If the difficulty is high enough - might have to manually set)
+    """
+
+    def random_move():
+        return random.choice(list(lb.board.legal_moves)).uci()
+
+    for i in range(10):
+        lb = LivingBoard(quiet=True)
+        lb.get_human_move_uci = random_move
+        lb.play_game()
+        assert lb.board.result() == '0-1'
+
+
 if __name__ == '__main__':
     test_english_moves()
     test_reset_codes()
+
+    test_has_brain()

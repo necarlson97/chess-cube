@@ -7,6 +7,7 @@ First argument changes the 'environment'. Options:
   email - Run with input and output over email
   email_daemon - Run email, but with nohup
     (in background, detached from terminal, output in nohup.out)
+  kill - kill any currently running email daemons
 """
 
 # TODO add an automatic option for post-ssh, what we are doing now as:
@@ -26,9 +27,8 @@ function email_chess {
   python3.7 src/email_chess.py
 }
 
-function email_daemon_chess {
-  # Run the email chess in this a nohup shell
-  # (does not end when user logs out. The 'production' env)
+function kill_previous {
+  # Find and kill any currently running 'email daemons' on nohup
   echo "Looking for currently running processes..."
   # List all processes, grep the pertinent ones,
   # remove this grep search (as, obviously, it contains the same string),
@@ -40,6 +40,12 @@ function email_daemon_chess {
   else
     echo "  None found"
   fi
+}
+
+function email_daemon_chess {
+  # Run the email chess in this a nohup shell
+  # (does not end when user logs out. The 'production' env)
+  kill_previous
 
   echo "Removing old nohup.out..."
   rm -f nohup.out
@@ -57,5 +63,6 @@ case $env in
   local) local_chess ;;
   email) email_chess ;;
   email_daemon) email_daemon_chess ;;
+  kill) kill_previous ;;
   *) echo -e "Unknwon env: '$env'.\n$help_text" ;;
 esac
