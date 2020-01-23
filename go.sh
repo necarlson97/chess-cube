@@ -18,12 +18,12 @@ source env/bin/activate
 
 function local_chess {
   # Run the chess client locally in this bash shell (default)
-  python3.7 src/driver.py
+  python3 src/driver.py
 }
 
 function email_chess {
   # Run the email chess in this bash shell (ends if terminal closes)
-  python3.7 src/email_chess.py
+  python3 src/email_chess.py
 }
 
 function email_daemon_chess {
@@ -33,7 +33,7 @@ function email_daemon_chess {
   # List all processes, grep the pertinent ones,
   # remove this grep search (as, obviously, it contains the same string),
   # take only the pid, use that pid to kill
-  PAST_PIDS=$(ps aux | grep -i 'python3.7 src/email_chess.py' | grep -v "grep" | awk '{print $2}') || true
+  PAST_PIDS=$(ps aux | grep -i 'python3 src/email_chess.py' | grep -v "grep" | awk '{print $2}') || true
   if [ ! -z $PAST_PIDS ]; then
     echo "  Killing: $PAST_PIDS"
     kill $PAST_PIDS
@@ -46,16 +46,16 @@ function email_daemon_chess {
 
   # Start in nohup shell
   echo "Starting in nohup..."
-  nohup python3.7 src/email_chess.py &
+  nohup python3 src/email_chess.py &
   sleep 1
   echo "Done!"
 }
 
 env=${1:-'local'}
-# Excecute depending on enviorment
+# Execute depending on environment
 case $env in
   local) local_chess ;;
   email) email_chess ;;
   email_daemon) email_daemon_chess ;;
-  *) echo -e "Unknwon env: '$env'.\n$help_text" ;;
+  *) echo -e "Unknown env: '$env'.\n$help_text" ;;
 esac
