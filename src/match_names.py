@@ -25,4 +25,5 @@ def generate_match_name():
     adjective = generate_adjective
     noun = generate_noun
 
-    return f'The {adjective()} {noun()} V.S. The {adjective()} {noun()}'
+    s = f'The {adjective()} {noun()} V.S. The {adjective()} {noun()}'
+    return s.replace('\n', '')
