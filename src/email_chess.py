@@ -46,9 +46,10 @@ class EmailSpeaker(Speaker):
         # TODO DOC
         self._email_list = []
 
-    def say(self, s, wait=False, slow=False, end=None, voiced=True):
+    def say(self, s, wait=False, slow=False, end=None, voiced=False):
         """
-        After performing normal 'say' action (printing, speaking out load)
+        After performing normal 'say' action
+        (printing, but not speaking out load)
         then perform email.
         """
         s = str(s)
