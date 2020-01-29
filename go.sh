@@ -27,13 +27,29 @@ function email_chess {
   python3 src/email_chess.py
 }
 
+function find_previous {
+  # Return the PIDs of any currently running email daemons
+  PAST_PIDS=$(ps aux | grep -i 'python3 src/email_chess.py' | grep -v "grep" | awk '{print $2}') || true
+  echo "$PAST_PIDS"
+}
+
+function print_previous {
+  # In case user is curious, print running PIDs
+  PAST_PIDS=$(find_previous)
+  if [ ! -z $PAST_PIDS ]; then
+    echo "Found: $PAST_PIDS"
+  else
+    echo "None found"
+  fi
+}
+
 function kill_previous {
   # Find and kill any currently running 'email daemons' on nohup
   echo "Looking for currently running processes..."
   # List all processes, grep the pertinent ones,
   # remove this grep search (as, obviously, it contains the same string),
   # take only the pid, use that pid to kill
-  PAST_PIDS=$(ps aux | grep -i 'python3 src/email_chess.py' | grep -v "grep" | awk '{print $2}') || true
+  PAST_PIDS=$(find_previous)
   if [ ! -z $PAST_PIDS ]; then
     echo "  Killing: $PAST_PIDS"
     kill $PAST_PIDS
@@ -64,5 +80,6 @@ case $env in
   email) email_chess ;;
   email_daemon) email_daemon_chess ;;
   kill) kill_previous ;;
+  find) print_previous ;;
   *) echo -e "Unknown env: '$env'.\n$help_text" ;;
 esac
