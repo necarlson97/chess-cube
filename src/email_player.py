@@ -33,7 +33,7 @@ class EmailPlayer(Player):
 
     email_list = []
 
-    def __init__(slef, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Initialize normally, only add that this player gives a match
         name to the game (so multiple email players can keep track of separate games)
@@ -41,30 +41,36 @@ class EmailPlayer(Player):
         super().__init__(*args, **kwargs)
         self.match_name = generate_match_name()
 
+        # Set some initial values used below
+        self._subject = self.match_name
+        self.last_check_date = dt.now(timezone.utc)
+
     def get_move(self):
         """
         Poll from std-in until we get an input that
         is a valid move
         """
+        # TODO technically emoji incorrectly assumes other player is human,
+        # but, you know, whatevs
         inp = self.get_email_input()
-        self.email_list.push(f'INPUT: {inp}')
+        self.email_list.append(f'🧑 {inp}')
         return inp
 
     def hear_move(self, move):
         english_str = self.referee.parser.move_to_english(move)
-        self.email_list.push(f'REPLY: {english_str}')
+        self.email_list.append(f'💻 {english_str}')
 
-    def hear(sefl, s):
-        self.email_list.push(s)
+    def hear(self, s):
+        self.email_list.append(s)
 
     def win(self):
-        self.email_list.push(f'You win!')
+        self.email_list.append(f'You win!')
 
     def lose(self):
-        self.email_list.push(f'You lose...')
+        self.email_list.append(f'You lose...')
 
     def draw(self):
-        self.email_list.push('Game was a draw')
+        self.email_list.append('Game was a draw')
 
     def get_subject(self):
         """
@@ -82,7 +88,8 @@ class EmailPlayer(Player):
         """
         if self.email_list == []:
             return
-        self.send_email(email_list.join('\n'))
+        self.send_email('\n'.join(self.email_list))
+        self.email_list = []
 
     def send_email(self, s):
         """
@@ -103,10 +110,13 @@ class EmailPlayer(Player):
         Wait for an email response, checking periodically.
         Once one is found, return it.
         """
-        # Send any unsent responses
-        self.commit_emails()
         # TODO could timeout after some amount of polling
         while True:
+            # Send any unsent responses
+            self.commit_emails()
+
+            # Useful for debugging
+            # TODO would be nice to not fill up file
             check_time = dt.now(timezone.utc)
             print(f'Checking at {check_time}...')
 
@@ -182,7 +192,7 @@ class EmailPlayer(Player):
 
     def get_email_message(self):
         # Get all message dicts
-        messages = self.get_email_messages()
+        messages = self._get_email_messages()
 
         # Return all of their bodies
         bodies = []

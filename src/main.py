@@ -22,7 +22,7 @@ def main():
     else:
         black = TerminalPlayer()
 
-    print(f'Starting game with {white} vs {black} - ({turn_time} turns)')
+    print(f'Starting game with {white} vs {black} - ({turn_time} per turn)')
     r = Referee(white, black)
     r.play_game()
 
