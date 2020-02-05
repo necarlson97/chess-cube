@@ -76,7 +76,18 @@ class StockfishPlayer(Player):
         """
         Return a list of all the moves, as rated by stockfish's score (in centipawns)
         """
-        move_time = self.turn_time.seconds / len(list(self.referee.board.legal_moves))
+
+        # How long do we want to spend thinking about the possible moves this turn
+        turn_time = self.turn_time.seconds
+
+        # First move is more open, and we want immediate feedback, so
+        # limit time spent thinking about the first move
+        # TODO bit sloppy, and maybe not what we want
+        print('Moves so far', self.referee.board.fullmove_number)
+        if self.referee.board.fullmove_number <= 1:
+            turn_time = 5
+
+        move_time = turn_time / len(list(self.referee.board.legal_moves))
 
         # Get the score for each move, add to list as tuple for easy sorting
         # (We use enumeration just as a tiebreaker, could use a specific

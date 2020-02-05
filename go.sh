@@ -40,7 +40,8 @@ function email_daemon_chess {
   echo "Starting in nohup..."
   nohup python3 src/main.py email 30m &
   sleep 1
-  echo "Done!"
+  echo "Done! Tailing the logs, you can ctrl+c at any time, and daemon will continue."
+  tail -f nohup.out
 }
 
 function find_previous {

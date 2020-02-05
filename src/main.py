@@ -13,7 +13,7 @@ def main():
     if '1s' in sys.argv:
         turn_time = timedelta(seconds=1)
     elif '30m' in sys.argv:
-        turn_time = timedelta(minuites=30)
+        turn_time = timedelta(minutes=30)
 
     white = StockfishPlayer(turn_time=turn_time)
 
