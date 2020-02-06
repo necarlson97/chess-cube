@@ -54,7 +54,8 @@ class EmailPlayer(Player):
         # TODO technically emoji incorrectly assumes other player is human,
         # but, you know, whatevs
         inp = self.get_email_input()
-        self.email_list.append(f'🧑 {inp}')
+        english_str = self.referee.parser.move_to_english(inp)
+        self.email_list.append(f'🧑 {english_str} ({inp})')
         return inp
 
     def hear_move(self, move):

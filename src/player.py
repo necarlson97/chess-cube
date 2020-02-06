@@ -80,7 +80,10 @@ class TerminalPlayer(Player):
         Poll from std-in until we get an input that
         is a valid move
         """
-        return input(f'{self.name} move: ')
+        inp = input(f'{self.name} move: ')
+        english_str = self.referee.parser.move_to_english(inp)
+        print(f'{english_str} ({inp})')
+        return inp
 
     def hear_move(self, move):
         english_str = self.referee.parser.move_to_english(move)

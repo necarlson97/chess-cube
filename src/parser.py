@@ -22,12 +22,26 @@ class UCIParser():
         if not move:
             return 'pass turn'
 
-        # Look at the board just before the move was made
+        # Get the current board state from referee
         board = self.referee.board.copy()
-        board.pop()
+
+        # If string was given, get move assuming the current board state
+        if type(move) is str:
+            move = self.referee.to_move(move)
+        # If a move was given, assume the move was just made, and look at the board before
+        else:
+            board.pop()
+
 
         from_piece = board.piece_at(move.from_square)
         to_piece = board.piece_at(move.to_square)
+
+        uci = move.uci()
+        from_square_name = uci[:2]
+        to_square_name = uci[2:]
+
+        if from_piece is None:
+            return f'No starting piece at {from_square_name}'
 
         piece_names = {
             1: 'pawn',
@@ -46,10 +60,6 @@ class UCIParser():
         # (default is the piece name, but dependent on ambiguity)
         to_piece_alias = to_piece_name
         from_piece_alias = from_piece_name
-
-        uci = move.uci()
-        from_square_name = uci[:2]
-        to_square_name = uci[2:]
 
         # Check if this attacker could be confused for another of the
         # same type
@@ -159,6 +169,8 @@ class UCIParser():
 
         s = f'{from_piece_alias} {verb} {to_piece_alias}'
 
+        # Try move, see if it puts is in a special state
+        # TODO these do not seem to work
         if board.is_en_passant(move):
             s += ' - pawn taken in passing'
 

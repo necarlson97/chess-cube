@@ -97,6 +97,11 @@ class Referee():
         """
         Given a UCI move string, return the python-chess move object
         """
+        # TODO I don't think returning a null move is actually valid
+        # when it comes to stockfish and whatnot.
+        # May need to raise an error here, and remove any other null move mentions
+        if move_str is None:
+            return chess.Move.null()
         return chess.Move.from_uci(move_str)
 
     def is_move(self, move_str):

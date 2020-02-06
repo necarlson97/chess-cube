@@ -83,8 +83,7 @@ class StockfishPlayer(Player):
         # First move is more open, and we want immediate feedback, so
         # limit time spent thinking about the first move
         # TODO bit sloppy, and maybe not what we want
-        print('Moves so far', self.referee.board.fullmove_number)
-        if self.referee.board.fullmove_number <= 1:
+        if self.referee.board.fullmove_number <= 1 and turn_time > 5:
             turn_time = 5
 
         move_time = turn_time / len(list(self.referee.board.legal_moves))

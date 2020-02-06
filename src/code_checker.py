@@ -37,7 +37,7 @@ class CodeChecker():
         Check that the given raw string is a code
         """
         # TODO check that the code exists, not just that it has *
-        return s.startswith('*')
+        return s is not None and s.startswith('*')
 
     def run(self, s):
         """
