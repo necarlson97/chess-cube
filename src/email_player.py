@@ -1,6 +1,7 @@
 import time
 from datetime import timezone, timedelta, datetime as dt
 from dateutil.parser import parse as date_parse
+import re
 
 import smtplib
 import poplib
@@ -174,7 +175,11 @@ class EmailPlayer(Player):
                 continue
 
             # Filter so it only responds to its own match
-            if self.match_name not in m['Subject']:
+            # (remove special chars)
+            msg_subject = re.sub(r'\W+', '', m['Subject'])
+            match_subject = re.sub(r'\W+', '', self.match_name)
+            if match_subject not in msg_subject:
+                print(f"Skipping \"{msg_subject}\" as it doesnt contain \"{match_subject}\"")
                 continue
 
             # Check to see if we should have seen this message before

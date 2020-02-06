@@ -1,12 +1,13 @@
 # Generated files need not be saved
 assets/save.yaml
-assets/stockfish_*
+nohup.out
 
 # Secret (non-git) email config info
 assets/config.yaml
 
 # Stockfish engine is different depending on the platform
 stockfish_10*
+assets/stockfish_*
 
 #### Below is python project defaults
 # Byte-compiled / optimized / DLL files
