@@ -1,14 +1,11 @@
 import random as rand
 import os
-import yaml
 from datetime import timedelta
 
 from chess.engine import Limit, SimpleEngine, Cp
 
 from player import Player
-
-# TODO could change for multiple players
-SAVE_FILE_NAME = 'assets/save.yaml'
+import save_file
 
 
 class StockfishPlayer(Player):
@@ -22,8 +19,8 @@ class StockfishPlayer(Player):
     def __init__(self, difficulty=None, turn_time=timedelta(seconds=10)):
         """
         Creates a stockfish AI chess player.
-        The difficulty of the AI is achieved by limiting stockfish's intelligence
-        (difficulty is float [0-1], roughly what % of it's brain it gets to use)
+        The AI difficulty is modulated by limiting stockfish's intelligence
+        (difficulty is float [0-1], roughly what % of it's brain it can to use)
         The amount of time stockfish can spend
         thinking on a turn is limited to the given turn_time (default 10)
         """
@@ -34,12 +31,7 @@ class StockfishPlayer(Player):
             self.difficulty = difficulty
         # Otherwise, load it from file (default of .5)
         else:
-            with open(SAVE_FILE_NAME, 'r+') as save_file:
-                dikt = yaml.safe_load(save_file)
-                save_file.seek(0)
-                if dikt is None:
-                    dikt = {}
-                self.difficulty = dikt.get('difficulty', .5)
+            self.difficulty = save_file.load()['difficulty']
 
     def get_stockfish(self):
         """
@@ -74,10 +66,11 @@ class StockfishPlayer(Player):
 
     def get_sorted_moves(self):
         """
-        Return a list of all the moves, as rated by stockfish's score (in centipawns)
+        Return a list of all the moves, as rated by
+        stockfish's score (in centipawns)
         """
 
-        # How long do we want to spend thinking about the possible moves this turn
+        # How long we can to spend thinking about the possible moves this turn
         turn_time = self.turn_time.seconds
 
         # First move is more open, and we want immediate feedback, so
@@ -188,10 +181,6 @@ class StockfishPlayer(Player):
         """
         Save any changes in difficulty to the yaml save file
         """
-        with open(SAVE_FILE_NAME, 'r+') as save_file:
-            dikt = yaml.safe_load(save_file)
-            save_file.seek(0)
-            if dikt is None:
-                    dikt = {}
-            dikt['difficulty'] = self.difficulty
-            yaml.safe_dump(dikt, save_file, default_flow_style=False)
+        dikt = save_file.load()
+        dikt['difficulty'] = self.difficulty
+        save_file.save(dikt)

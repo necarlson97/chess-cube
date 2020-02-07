@@ -2,13 +2,15 @@ import chess  # python-chess chess board management
 
 from code_checker import CodeChecker
 from parser import UCIParser
-
+import save_file
 
 
 class Referee():
     """
-    This class manages the actual board (submitting moves, resetting game, determining winner, etc)
-    It represents the heart of the program, but remains agnostic of who the players are (ai or human)
+    This class manages the actual board (submitting moves,
+    resetting game, determining winner, etc)
+    It represents the heart of the program,
+    but remains agnostic of who the players are (ai or human)
     """
 
     # Gives us a boolean we can set to false if we want the games to stop
@@ -42,32 +44,41 @@ class Referee():
             self.board.push(move)
             self.active_player().hear_move(move)
 
+            self.commit_fen()
+
         # TODO who wins if game was called (self.running set to false)? Draw?
 
         result = self.board.result()
 
-        if result == '1-0': # If white player won
+        if result == '1-0':  # If white player won
             self.white_player.win()
             self.black_player.lose()
-        elif result == '0-1': # if black player won
+        elif result == '0-1':  # if black player won
             self.white_player.lose()
             self.black_player.win()
-        elif result == '1/2-1/2': # If there was a draw
+        elif result == '1/2-1/2':  # If there was a draw
             self.black_player.draw()
             self.white_player.draw()
         else:
-            raise ValueError(f'Unknown game end: "{result}"\n{self.board}\n\n{self.board.fen()}')
+            raise ValueError(f'Unknown game end: "{result}"\n'
+                             f'{self.board}\n\n{self.board.fen()}')
 
     def get_move(self):
         """
-        TODO DOC
+        Get a move from the active player (calling get_move).
+        If the move is a code, process the code (and possibly try
+        to get a move from the same player).
+        Once we have a valid chess move, return it to be played.
+        If the player inputs (from get_move) are illegal or invalid
+        chess moves, let them know and try again.
         """
         while True:
             raw = self.active_player().get_move()
 
             try:
                 if self.is_code(raw):
-                    # If the code returns a suggested next input, then we will submit that
+                    # If the code returns a suggested next input,
+                    # then we will submit that
                     move_str = self.run_code(raw)
                     if move_str is not None:
                         return self.to_move(move_str)
@@ -82,16 +93,33 @@ class Referee():
             except ValueError as e:
                 self.active_player().hear(f'Invalid "{raw}": {e}')
 
+    def commit_fen(self):
+        """
+        Add the current board state to the board, so if there is a crash or
+        mistake, we can reset the board to a previous state.
+        """
+        dikt = save_file.load()
+        dikt.setdefault('fens', [])
+        # Add to the front of the fens list (nicer looking)
+        dikt['fens'].insert(0, self.board.fen())
+        # Only keep (for now) the past 10 board states
+        while len(dikt['fens']) > 10:
+            dikt['fens'].pop()
+        save_file.save(dikt)
 
-    def active_player(self):
+    def active_player(self, board=None):
         """
         Return the player obj for whomever's turn it is
         """
-        if self.board.turn == chess.WHITE:
+        if board is None:
+            board = self.board
+
+        if board.turn == chess.WHITE:
             return self.white_player
-        elif self.board.turn == chess.BLACK:
+        elif board.turn == chess.BLACK:
             return self.black_player
-        raise ValueError(f'Turn was not white or black {self.board.turn} [{chess.WHITE}, {chess.BLACK}]')
+        raise ValueError(f'Turn was not white or black '
+                         f'{self.board.turn} [{chess.WHITE}, {chess.BLACK}]')
 
     def to_move(self, move_str):
         """
@@ -99,7 +127,8 @@ class Referee():
         """
         # TODO I don't think returning a null move is actually valid
         # when it comes to stockfish and whatnot.
-        # May need to raise an error here, and remove any other null move mentions
+        # May need to raise an error here,
+        # and remove any other null move mentions
         if move_str is None:
             return chess.Move.null()
         return chess.Move.from_uci(move_str)
@@ -114,7 +143,7 @@ class Referee():
         # TODO should really have it return a string if there is a problem,
         # to differentiate between invalid and illegal
         try:
-            moves =  list(self.board.legal_moves) + [chess.Move.null()]
+            moves = list(self.board.legal_moves) + [chess.Move.null()]
             return True if self.to_move(move_str) in moves else False
         except ValueError:
             return False
@@ -148,4 +177,5 @@ class Referee():
         elif player is self.black_player:
             return self.white_player
         else:
-            raise ValueError(f'{player} was not black ({self.black_player}) nor white ({self.white_player})')
+            raise ValueError(f'{player} was not black ({self.black_player}) '
+                             f'nor white ({self.white_player})')

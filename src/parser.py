@@ -27,11 +27,15 @@ class UCIParser():
 
         # If string was given, get move assuming the current board state
         if type(move) is str:
+            # Though, if it is a code, ignore it
+            if self.referee.is_code(move):
+                code_name, _ = self.referee.code_checker.get_code_info(move)
+                return f'Code: "{code_name}"'
             move = self.referee.to_move(move)
-        # If a move was given, assume the move was just made, and look at the board before
+        # If a move was given, assume the move was just made,
+        # and look at the board before
         else:
             board.pop()
-
 
         from_piece = board.piece_at(move.from_square)
         to_piece = board.piece_at(move.to_square)
