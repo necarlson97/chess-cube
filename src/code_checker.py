@@ -27,8 +27,8 @@ class CodeChecker():
             'help': 'show this help message',
             'show': 'show ascii art of the board',
             'fen': 'load a given fen',
-            'turns': 'show previous turns',
-            'load': 'load a previous turn',
+            'prev': ('show previous turns - and if a number follows, '
+                     'load that previous turn'),
             'resign': 'resign, forfeiting the game',
         }
 
