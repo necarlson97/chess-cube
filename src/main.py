@@ -6,6 +6,7 @@ from player import TerminalPlayer
 from stockfish_player import StockfishPlayer
 from email_player import EmailPlayer
 
+
 def main():
 
     # TODO rudimentary, but works for now
@@ -19,11 +20,17 @@ def main():
 
     if 'email' in sys.argv:
         black = EmailPlayer()
+    elif 'fishes' in sys.argv:
+        black = StockfishPlayer(turn_time=turn_time)
     else:
         black = TerminalPlayer()
 
     print(f'Starting game with {white} vs {black} - ({turn_time} per turn)')
     r = Referee(white, black)
-    r.play_game()
+
+    # For now, just have it play games forever
+    while True:
+        r.play_game()
+
 
 main()

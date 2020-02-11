@@ -1,5 +1,5 @@
 import time
-from datetime import timezone, timedelta, datetime as dt
+from datetime import timezone, datetime as dt
 from dateutil.parser import parse as date_parse
 import re
 
@@ -7,25 +7,15 @@ import smtplib
 import poplib
 from email.parser import Parser
 from email.mime.text import MIMEText
-import yaml
+import save_file
 
 from player import Player
 from match_names import generate_match_name
 
-def read_config_file():
-    # Read in the config file to get sensative (non-git) email info
-    with open('assets/config.yaml', 'r') as f:
-        dikt = yaml.safe_load(f)['email_config']
 
-    # Allows to access this dict as if it were an object
-    # TODO do we need this? Is there a better way?
-    class ObjectView():
-        def __init__(self, d):
-            self.__dict__ = d
-    return ObjectView(dikt)
+# Get email setup data from yaml file
+CONFIG = save_file.read_config_file()
 
-# Get save data from yaml file
-CONFIG = read_config_file()
 
 class EmailPlayer(Player):
     """
@@ -37,7 +27,8 @@ class EmailPlayer(Player):
     def __init__(self, *args, **kwargs):
         """
         Initialize normally, only add that this player gives a match
-        name to the game (so multiple email players can keep track of separate games)
+        name to the game
+        (so multiple email players can keep track of separate games)
         """
         super().__init__(*args, **kwargs)
         self.match_name = generate_match_name()
@@ -67,12 +58,15 @@ class EmailPlayer(Player):
 
     def win(self):
         self.email_list.append(f'You win!')
+        self.commit_emails()
 
     def lose(self):
         self.email_list.append(f'You lose...')
+        self.commit_emails()
 
     def draw(self):
         self.email_list.append('Game was a draw')
+        self.commit_emails()
 
     def get_subject(self):
         """
@@ -180,7 +174,6 @@ class EmailPlayer(Player):
             msg_subject = re.sub(r'\W+', '', m['Subject'])
             match_subject = re.sub(r'\W+', '', self.match_name)
             if match_subject not in msg_subject:
-                print(f"Skipping \"{msg_subject}\" as it doesnt contain \"{match_subject}\"")
                 continue
 
             # Check to see if we should have seen this message before
