@@ -84,7 +84,8 @@ class EmailPlayer(Player):
         """
         if self.email_list == []:
             return
-        self.send_email('\n'.join(self.email_list))
+        strs = [str(s) for s in self.email_list]
+        self.send_email('\n'.join(strs))
         self.email_list = []
 
     def send_email(self, s):
