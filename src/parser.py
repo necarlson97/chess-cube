@@ -1,79 +1,60 @@
-from gtts import gTTS  # Google text to speech for the computer player speech
-import pyttsx3  # Another text to speech engine that offers more voices
-import subprocess  # Python os for playing google speech mp3s
 
 
-class Speaker():
+class UCIParser():
     """
-    Used to perform the reporting of the computer moves, as well as banter
-    like announcing wins, saying hello, etc. Is, for now, writing to
-    terminal and using text-to-speech, but in the future
-    could add lights, mtion, etc
+    A class for parsing uci to more human readable
+    english strings
     """
 
-    # TODO return to true, off for speed testing
-    voiced = True
-
-    rate = 150  # Good place to leave = 150
-    volume = 1  # Quiet, just for podcast listening lol
-
-    pytts = pyttsx3.init()
-
-    def __init__(self, living_board=None, quiet=False):
-        self.living_board = living_board
-        if living_board is not None:
-            living_board.speaker = self
-
-        self.pytts.setProperty('rate', self.rate)
-        self.pytts.setProperty('volume', self.volume)
-
-        # Set the vocie function (currently using pytts rather than google tts)
-        self.voice_func = self.pytts_say
-
-        self.voiced = not quiet
-
-    def say_greeting(self):
-        pass
-
-    def say_thinking(self):
-        pass
-
-    def say_ai_move(self, move):
-        # TODO what do we do for null move?
-        if not move:
-            return
-        self.say('RESPONSE: ', end='')
-        self.say_move(move)
-
-    def say_human_move(self, move):
-        # TODO what do we do for null move?
-        if not move:
-            return
-        self.say(f'   INPUT: ', end='')
-        self.say_move(move)
-
-    def move_to_english_str(self, move):
+    def __init__(self, referee):
         """
-        Given a move, return the 'best' we can do in english.
-        Here are some examples of a priority format
-        attacking = Pawn take rook
-        unique move = Pawn to a3
-        uci = a2 to a3
+        Can use the referee to get info like
+        if a move is taking a piece, or illegal, etc
         """
+        self.referee = referee
+
+    def move_to_english(self, move):
+        """
+        Given a python-chess move and return an English translation
+        """
+
         # If null move is given:
         if not move:
-            return 'null move'
+            return 'pass turn'
 
-        if self.living_board is None:
-            raise ValueError(
-                'Cannot translate, as '
-                'speaker has no associated board')
-        board = self.living_board.board
+        # Get the current board state from referee
+        board = self.referee.board.copy()
+
+        # If string was given, get move assuming the current board state
+        if type(move) is str:
+            # Though, if it is a code, ignore it
+            if self.referee.is_code(move):
+                code_name, _ = self.referee.code_checker.get_code_info(move)
+                return f'Code: "{code_name}"'
+            move = self.referee.to_move(move)
+        # If a move was given, assume the move was just made,
+        # and look at the board before
+        else:
+            board.pop()
 
         from_piece = board.piece_at(move.from_square)
         to_piece = board.piece_at(move.to_square)
 
-        piece_names = self.living_board.piece_names
+        uci = move.uci()
+        from_square_name = uci[:2]
+        to_square_name = uci[2:]
+
+        if from_piece is None:
+            return f'No starting piece at {from_square_name}'
+
+        piece_names = {
+            1: 'pawn',
+            2: 'knight',
+            3: 'bishop',
+            4: 'rook',
+            5: 'queen',
+            6: 'king'
+        }
 
         from_piece_name = piece_names.get(from_piece.piece_type)
         to_piece_name = (None if to_piece is None
@@ -83,10 +64,6 @@ class Speaker():
         # (default is the piece name, but dependent on ambiguity)
         to_piece_alias = to_piece_name
         from_piece_alias = from_piece_name
-
-        uci = move.uci()
-        from_square_name = uci[:2]
-        to_square_name = uci[2:]
 
         # Check if this attacker could be confused for another of the
         # same type
@@ -196,6 +173,8 @@ class Speaker():
 
         s = f'{from_piece_alias} {verb} {to_piece_alias}'
 
+        # Try move, see if it puts is in a special state
+        # TODO these do not seem to work
         if board.is_en_passant(move):
             s += ' - pawn taken in passing'
 
@@ -207,63 +186,3 @@ class Speaker():
 
         return s
 
-    def say_move(self, move):
-        """
-        Turn the chess UCI format to something that sounds better
-        (Google says the move better if we space it out)
-        TODO might not want to use uci here, migjt want to use
-        more plain english
-        """
-        self.say(self.move_to_english_str(move))
-
-    def say(self, s, wait=False, slow=False, end=None, voiced=True):
-        """
-        Take in a string s and communicate that phrase to the user. Can be
-        through printed text, voice, displaying on screen, anything.
-        Current: print out and audio speech
-        """
-        print(s, end=end)
-
-        # If we were told to voice this string, and voicing has not been
-        # disabled globally for this instance
-        if voiced and self.voiced:
-            self.voice_func(s, wait, slow)
-
-    def pytts_say(self, s, wait=False, slow=False):
-        # Use pytts to create audio
-
-        # TODO currently 'slow' and 'wait' not supported
-
-        self.pytts.say(s)
-        self.pytts.runAndWait()
-
-    def google_say(self, s, wait=False, slow=False):
-        # Use google text to speech to create audio
-        speech = gTTS(text=s, lang='en', slow=slow)
-        # TODO could cache
-        file_name = 'speech/s.mp3'
-        speech.save(file_name)
-        cmd = ['mpg123', '-q', file_name]
-        if wait:
-            subprocess.run(cmd)
-        else:
-            subprocess.Popen(cmd)
-
-    def say_loose(self):
-        # Utter a phrase upon compuer losing a game
-        self.say('GAME OVER. YOU WIN.')
-
-    def say_win(self):
-        # Utter a phrase upon computer winning a game
-        self.say('GAME OVER. I WIN.')
-
-    def say_draw(self):
-        self.say('GAME OVER. DRAW.')
-
-    def commit(self):
-        """
-        Stub function, not used for current vocal, but for some speakers
-        (like email) it is useful to store up all the things that need
-        to be siad in a turn, then sned them all as a single message
-        """
-        pass
