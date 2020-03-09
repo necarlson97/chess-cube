@@ -38,7 +38,7 @@ function email_daemon_chess {
 
   # Start in nohup shell
   echo "Starting in nohup..."
-  nohup python3 src/main.py email 30m &
+  nohup 2>&1 python3 src/main.py email 30m &
   sleep 1
   echo "Done! Tailing the logs, you can ctrl+c at any time, and daemon will continue."
   tail -f nohup.out

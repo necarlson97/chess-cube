@@ -8,7 +8,19 @@ from email_player import EmailPlayer
 
 
 def main():
+    """
+    Start games on and on forever
+    """
+    # Note: the reason we start new games rather than just using the same
+    # players is because, for now, we want new email games to use new names
+    while True:
+        start_game()
 
+
+def start_game():
+    """
+    Create new players, and play a single game
+    """
     # TODO rudimentary, but works for now
     turn_time = timedelta(seconds=10)
     if '1s' in sys.argv:
@@ -28,9 +40,7 @@ def main():
     print(f'Starting game with {white} vs {black} - ({turn_time} per turn)')
     r = Referee(white, black)
 
-    # For now, just have it play games forever
-    while True:
-        r.play_game()
+    r.play_game()
 
 
 main()
