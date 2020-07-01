@@ -18,8 +18,6 @@ class UCIParser():
         Given a python-chess move and return an English translation
         """
 
-        raise ValueError('Purposeful error to see where it is logged')
-
         # If null move is given:
         if not move:
             return 'pass turn'
