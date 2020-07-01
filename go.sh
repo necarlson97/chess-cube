@@ -6,7 +6,7 @@ First argument changes the 'environment'. Options:
   local - Run through terminal
   email - Run over email
   email_daemon - Run email in background, giving A.I. 30m per turn
-    (in background, detached from terminal, output in nohup.out)
+    (in background, detached from terminal, output in log.txt)
   kill - kill any currently running email daemons
 """
 
@@ -33,15 +33,18 @@ function email_daemon_chess {
   # (does not end when user logs out. The 'production' env)
   kill_previous
 
-  echo "Removing old nohup.out..."
-  rm -f nohup.out
+  echo "Removing old log.txt..."
+  rm -f log.txt
 
   # Start in nohup shell
   echo "Starting in nohup..."
-  nohup python3 src/main.py email 30m &
+  # (-u prevents python stderr output bug,
+  # > redirects stdout AND stderr to log.txt,
+  # and the '&' says run in bg)
+  nohup python3 -u src/main.py email 30m > log.txt &
   sleep 1
   echo "Done! Tailing the logs, you can ctrl+c at any time, and daemon will continue."
-  tail -f nohup.out
+  tail -f log.txt
 }
 
 function find_previous {

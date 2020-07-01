@@ -1,6 +1,7 @@
 # Generated files need not be saved
 assets/save.yaml
 nohup.out
+log.txt
 
 # Secret (non-git) email config info
 assets/config.yaml
