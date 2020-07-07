@@ -2,6 +2,7 @@ import time
 from datetime import timezone, datetime as dt
 from dateutil.parser import parse as date_parse
 import re
+import socket
 
 import smtplib
 import poplib
@@ -134,9 +135,17 @@ class EmailPlayer(Player):
         '.get_payload()' (though there may be multiple payloads)
         """
 
-        pop_conn = poplib.POP3_SSL('mail.gandi.net')
-        pop_conn.user(CONFIG.username)
-        pop_conn.pass_(CONFIG.password)
+        # There can be occasional connectivity errors
+        # (if, for example, our datetime drifts and has not
+        # self-corrected yet)
+        # In these cases, we just try again in a bit
+        try:
+            pop_conn = poplib.POP3_SSL('mail.gandi.net')
+            pop_conn.user(CONFIG.username)
+            pop_conn.pass_(CONFIG.password)
+        except socket.gaierror as e:
+            print(f'Socket error getting email messages: {str(e)}')
+            return []
 
         # Helper function that gets given raw email bytes and returns
         # dict of useful info
