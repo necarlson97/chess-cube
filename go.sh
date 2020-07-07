@@ -8,6 +8,7 @@ First argument changes the 'environment'. Options:
   email_daemon - Run email in background, giving A.I. 30m per turn
     (in background, detached from terminal, output in log.txt)
   kill - kill any currently running email daemons
+  find - display PID of any currently running email daemons
 """
 
 # TODO add an automatic option for post-ssh, what we are doing now as:
