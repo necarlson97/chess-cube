@@ -86,8 +86,11 @@ class EmailPlayer(Player):
         if self.email_list == []:
             return
         strs = [str(s) for s in self.email_list]
-        self.send_email('\n'.join(strs))
-        self.email_list = []
+        try:
+            self.send_email('\n'.join(strs))
+            self.email_list = []
+        except smtplib.SMTPDataError as e:
+            print(f'Error sending emails {strs}: {str(e)}')
 
     def send_email(self, s):
         """
