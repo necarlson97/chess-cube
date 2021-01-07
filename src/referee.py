@@ -73,9 +73,9 @@ class Referee():
         chess moves, let them know and try again.
         """
         while True:
-            raw = self.active_player().get_move()
-
             try:
+                raw = self.active_player().get_move()
+
                 if self.is_code(raw):
                     # If the code returns a suggested next input,
                     # then we will submit that
