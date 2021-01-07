@@ -181,8 +181,7 @@ class UCIParser():
         if board.is_castling(move):
             s += ' - castling'
 
-        if board.is_into_check(move):
+        if board.gives_check(move):
             s += ' - check'
 
         return s
-

@@ -1,5 +1,5 @@
 gTTS==2.0.3
-python-chess==0.28.2
+python-chess==1.999
 PyYAML==5.1.1
 python-dateutil==2.8.0
 pyttsx3==2.71

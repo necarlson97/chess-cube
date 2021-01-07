@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class Player(ABC):
     """
     Abstract class for a chess player,
@@ -70,6 +71,7 @@ class Player(ABC):
     def __str__(self):
         return f'{self.__class__.__name__} - {self.name}'
 
+
 class TerminalPlayer(Player):
     """
     A human typing in their moves in the terminal
@@ -102,14 +104,18 @@ class TerminalPlayer(Player):
     def draw(self):
         print('Game was a draw')
 
-class EmailPlayer(Player):
-    """
-    A human emailing their moves to an address
-    """
-    pass
 
-class QueuePlayer(Player):
+class QueuePlayer(TerminalPlayer):
     """
     A test player which is just given a list of moves to spit out
     """
-    pass
+
+    moves = []
+
+    def __init__(self, moves):
+        self.moves = moves
+
+    def get_move(self):
+        if not self.moves:
+            return '*resign'
+        return self.moves.pop(0)
