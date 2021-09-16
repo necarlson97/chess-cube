@@ -50,6 +50,8 @@ function email_daemon_chess {
 
 function find_previous {
   # Return the PIDs of any currently running email daemons
+  # TODO: this prevents two games on the same system...
+  # Hmm.. want to fix that, not sure what is robust enough
   PAST_PIDS=$(ps aux | grep -i 'python3 src/main.py' | grep -v "grep" | awk '{print $2}') || true
   echo "$PAST_PIDS"
 }

@@ -103,7 +103,7 @@ class CodeChecker():
         Show the current board state (in ascii art string)
         to the active player
         """
-        self.hear(self.referee.board)
+        self.hear(f"{self.referee.board}\n{self.referee.board.fen()}")
 
     def resign(self, code_str=None):
         """
