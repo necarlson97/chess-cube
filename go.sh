@@ -42,7 +42,8 @@ function email_daemon_chess {
   # (-u prevents python stderr output bug,
   # > redirects stdout AND stderr to log.txt,
   # and the '&' says run in bg)
-  nohup python3 -u src/main.py email 30m > log.txt &
+  TIME=${2:-'30m'}
+  nohup python3 -u src/main.py email $TIME > log.txt &
   sleep 1
   echo "Done! Tailing the logs, you can ctrl+c at any time, and daemon will continue."
   tail -f log.txt
@@ -52,14 +53,18 @@ function find_previous {
   # Return the PIDs of any currently running email daemons
   # TODO: this prevents two games on the same system...
   # Hmm.. want to fix that, not sure what is robust enough
-  PAST_PIDS=$(ps aux | grep -i 'python3 src/main.py' | grep -v "grep" | awk '{print $2}') || true
+  if [ "$2" = "all" ]; then
+    PAST_PIDS=$(ps aux | grep -i 'python3 src/main.py' | grep -v "grep" | awk '{print $2}') || true
+  else
+    PAST_PIDS= head -1 log.txt | cut -b 6-12
+  fi
   echo "$PAST_PIDS"
 }
 
 function print_previous {
   # In case user is curious, print running PIDs
   PAST_PIDS=$(find_previous)
-  if [ ! -z $PAST_PIDS ]; then
+  if [ ! -z "$PAST_PIDS" ]; then
     echo "Found: $PAST_PIDS"
   else
     echo "None found"
@@ -84,10 +89,10 @@ function kill_previous {
 env=${1:-'local'}
 # Execute depending on environment
 case $env in
-  local) local_chess ;;
-  email) email_chess ;;
-  email_daemon) email_daemon_chess ;;
-  kill) kill_previous ;;
-  find) print_previous ;;
+  local) local_chess $@;;
+  email) email_chess $@;;
+  email_daemon) email_daemon_chess $@;;
+  kill) kill_previous $@;;
+  find) print_previous $@;;
   *) echo -e "Unknown env: '$env'.\n$help_text" ;;
 esac

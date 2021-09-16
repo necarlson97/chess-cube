@@ -1,4 +1,5 @@
 import sys
+import os
 from datetime import timedelta
 
 from referee import Referee
@@ -31,6 +32,8 @@ def start_game():
     white = StockfishPlayer(turn_time=turn_time)
 
     if 'email' in sys.argv:
+        # Because we may want to kill this PID later on
+        print(f'PID: {os.getpid()}')
         black = EmailPlayer()
     elif 'fishes' in sys.argv:
         black = StockfishPlayer(turn_time=turn_time)

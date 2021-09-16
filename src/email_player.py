@@ -158,7 +158,7 @@ class EmailPlayer(Player):
             # (for whatever reason, they are 1-indexed)
             try:
                 resp, lines, octets = pop_conn.retr(i + 1)
-            except poplib.error_proto:
+            except (poplib.error_proto, ConnectionResetError):
                 return None
 
             # Decode, and use parser to create useful Message object
