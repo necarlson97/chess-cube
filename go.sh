@@ -80,7 +80,7 @@ function kill_previous {
   PAST_PIDS=$(find_previous)
   if [ ! -z $PAST_PIDS ]; then
     echo "  Killing: $PAST_PIDS"
-    kill $PAST_PIDS
+    kill $PAST_PIDS || true
   else
     echo "  None found"
   fi

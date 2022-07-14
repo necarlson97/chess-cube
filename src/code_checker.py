@@ -25,7 +25,7 @@ class CodeChecker():
         }
         self.code_descriptions = {
             'help': 'show this help message',
-            'show': 'show ascii art of the board',
+            'show': 'show ascii art (and fen) of the board',
             'fen': 'load a given fen',
             'prev': ('show previous turns - and if a number follows, '
                      'load that previous turn'),
@@ -103,7 +103,7 @@ class CodeChecker():
         Show the current board state (in ascii art string)
         to the active player
         """
-        self.hear(f"{self.referee.board}\n{self.referee.board.fen()}")
+        self.hear(f"{self.referee.board}\n\n{self.referee.board.fen()}")
 
     def resign(self, code_str=None):
         """
